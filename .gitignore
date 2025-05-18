@@ -1,0 +1,35 @@
+# Dependencias
+/node_modules
+/.astro
+.DS_Store
+
+# Archivos de entorno
+.env
+.env.*
+!.env.example
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Directorios de build
+dist/
+dist-ssr/
+*.tsbuildinfo
+.next/
+.nuxt/
+
+# Misc
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Archivos de sistema
+Thumbs.db
