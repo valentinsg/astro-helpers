@@ -1,46 +1,1158 @@
----
-import UploadForm from "../components/UploadForm.astro";
----
-
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Busy Convert</title>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversor de Imágenes a WebP</title>
     <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: Helvetica, sans-serif;
-        background-color: #f0f0f0;
-        color: #333;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-      }
+        /* === VARIABLES CSS === */
+        :root {
+            --primary-color: #555454;
+            --primary-light: #6b6a6a;
+            --primary-dark: #3d3c3c;
+            --secondary-color: #f0f0f0;
+            --accent-color: #4CAF50;
+            --danger-color: #f44336;
+            --warning-color: #ff9800;
+            --border-color: #ccc;
+            --border-radius: 8px;
+            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --transition: all 0.3s ease;
+        }
 
-      .container {
-        background: white;
-        padding: 2rem;
-        border-radius: 1rem;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-        max-width: 400px;
-        width: 100%;
-      }
+        /* === RESET Y BASE === */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      h1 {
-        text-align: center;
-        font-weight: 700;
-        font-size: 2rem;
-        color: #555454;
-        font-family: "Horizon", sans-serif;
-      }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 1rem;
+            color: var(--primary-color);
+        }
+
+        /* === CONTENEDOR PRINCIPAL === */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--primary-color);
+            color: white;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        /* === PASOS DEL PROCESO === */
+        .steps {
+            display: flex;
+            justify-content: space-between;
+            padding: 1.5rem 2rem;
+            background: var(--secondary-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            position: relative;
+        }
+
+        .step:not(:last-child)::after {
+            content: "";
+            position: absolute;
+            right: -50%;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 0;
+        }
+
+        .step-number {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--border-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            margin-right: 0.5rem;
+            position: relative;
+            z-index: 1;
+            transition: var(--transition);
+        }
+
+        .step.active .step-number {
+            background: var(--primary-color);
+        }
+
+        .step.completed .step-number {
+            background: var(--accent-color);
+        }
+
+        .step-text {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* === FORMULARIO === */
+        .form-container {
+            padding: 2rem;
+        }
+
+        .step-content {
+            display: none;
+        }
+
+        .step-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* === ZONA DE CARGA === */
+        .upload-zone {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 3rem 2rem;
+            text-align: center;
+            background: var(--secondary-color);
+            cursor: pointer;
+            transition: var(--transition);
+            margin-bottom: 1rem;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--primary-color);
+            background: #e8e8e8;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            color: var(--border-color);
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-subtext {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        /* === LISTA DE ARCHIVOS === */
+        .file-list {
+            margin-top: 1rem;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: var(--secondary-color);
+            border-radius: var(--border-radius);
+            margin-bottom: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+
+        .file-icon {
+            margin-right: 0.75rem;
+            color: var(--primary-color);
+        }
+
+        .file-details {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            margin-bottom: 0.2rem;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .remove-file {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .remove-file:hover {
+            background: rgba(244, 67, 54, 0.1);
+        }
+
+        /* === BOTONES === */
+        .btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: var(--transition);
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .btn:hover:not(:disabled) {
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: var(--border-color);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        /* === CONFIGURACIÓN === */
+        .config-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .config-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .config-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .config-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(85, 84, 84, 0.1);
+        }
+
+        .quality-slider {
+            margin-top: 0.5rem;
+        }
+
+        .quality-display {
+            text-align: center;
+            font-weight: 500;
+            color: var(--primary-color);
+            margin-top: 0.5rem;
+        }
+
+        /* === OVERLAY DE CARGA === */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            color: white;
+            display: none;
+        }
+
+        .loading-content {
+            text-align: center;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-message {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-tip {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: white;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        /* === ALERTAS === */
+        .alert {
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: var(--accent-color);
+            color: #155724;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            border-color: var(--danger-color);
+            color: #721c24;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: var(--warning-color);
+            color: #856404;
+        }
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+
+            .header {
+                padding: 1.5rem 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .steps {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .step:not(:last-child)::after {
+                display: none;
+            }
+
+            .step-number {
+                width: 25px;
+                height: 25px;
+                font-size: 0.7rem;
+            }
+
+            .form-container {
+                padding: 1rem;
+            }
+
+            .upload-zone {
+                padding: 2rem 1rem;
+            }
+
+            .upload-icon {
+                font-size: 2rem;
+            }
+
+            .file-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .file-info {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0;
+            }
+
+            .upload-zone {
+                padding: 1.5rem 1rem;
+            }
+
+            .btn {
+                padding: 1rem;
+                font-size: 1.1rem;
+            }
+        }
+
+        /* === ESTADOS ADICIONALES === */
+        .hidden {
+            display: none !important;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+
+        .shake {
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
+    <!-- === CONTENEDOR PRINCIPAL === -->
     <div class="container">
-      <h1>Busy Convert</h1>
-      <UploadForm />
+        <!-- === HEADER === -->
+        <div class="header">
+            <h1>🖼️ Conversor de Imágenes</h1>
+            <p>Convierte tus imágenes a formato WebP de manera rápida y sencilla</p>
+        </div>
+
+        <!-- === PASOS DEL PROCESO === -->
+        <div class="steps">
+            <div class="step active" data-step="1">
+                <div class="step-number">1</div>
+                <div class="step-text">Seleccionar</div>
+            </div>
+            <div class="step" data-step="2">
+                <div class="step-number">2</div>
+                <div class="step-text">Configurar</div>
+            </div>
+            <div class="step" data-step="3">
+                <div class="step-number">3</div>
+                <div class="step-text">Convertir</div>
+            </div>
+        </div>
+
+        <!-- === CONTENIDO DEL FORMULARIO === -->
+        <div class="form-container">
+            <!-- === PASO 1: SELECCIONAR ARCHIVOS === -->
+            <div class="step-content active" id="step1">
+                <h2 style="margin-bottom: 1rem;">Selecciona tus imágenes</h2>
+                
+                <div class="upload-zone" id="uploadZone">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Arrastra imágenes aquí o haz clic para seleccionar</div>
+                    <div class="upload-subtext">Soporta JPG, PNG, GIF (máx. 10MB por imagen, 20 imágenes)</div>
+                </div>
+
+                <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+
+                <div id="fileList" class="file-list hidden"></div>
+
+                <div id="fileAlert" class="alert alert-warning hidden">
+                    <strong>⚠️ Atención:</strong> Solo se procesarán los primeros 20 archivos seleccionados.
+                </div>
+
+                <button class="btn" id="nextStep1" disabled>
+                    Continuar con la configuración
+                </button>
+            </div>
+
+            <!-- === PASO 2: CONFIGURACIÓN === -->
+            <div class="step-content" id="step2">
+                <h2 style="margin-bottom: 1rem;">Configuración de conversión</h2>
+
+                <div class="config-section">
+                    <label class="config-label">🔑 API Key del servicio</label>
+                    <input type="password" class="config-input" id="apiKey" placeholder="Ingresa tu API Key" value="changeme">
+                    <small style="color: #666; display: block; margin-top: 0.5rem;">
+                        Para pruebas puedes usar "changeme"
+                    </small>
+                </div>
+
+                <div class="config-section">
+                    <label class="config-label">⚙️ Calidad de compresión</label>
+                    <input type="range" class="config-input quality-slider" id="qualitySlider" min="60" max="100" value="80">
+                    <div class="quality-display" id="qualityDisplay">Calidad: 80%</div>
+                    <small style="color: #666; display: block; margin-top: 0.5rem;">
+                        Mayor calidad = archivos más grandes
+                    </small>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button class="btn btn-secondary" id="backStep1">⬅️ Volver</button>
+                    <button class="btn" id="nextStep2">Proceder a convertir ➡️</button>
+                </div>
+            </div>
+
+            <!-- === PASO 3: CONVERSIÓN === -->
+            <div class="step-content" id="step3">
+                <h2 style="margin-bottom: 1rem;">¡Todo listo para convertir!</h2>
+
+                <div id="conversionSummary" class="alert alert-success">
+                    <strong>📋 Resumen:</strong>
+                    <div id="summaryText"></div>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button class="btn btn-secondary" id="backStep2">⬅️ Volver</button>
+                    <button class="btn" id="convertButton">🚀 Convertir imágenes</button>
+                </div>
+
+                <button class="btn btn-secondary" id="startOver" style="margin-top: 1rem;">
+                    🔄 Empezar de nuevo
+                </button>
+            </div>
+        </div>
     </div>
-  </body>
+
+    <!-- === OVERLAY DE CARGA === -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div class="loading-message" id="loadingMessage">Preparando conversión...</div>
+            <div class="loading-tip" id="loadingTip">Esto puede tomar unos segundos</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * === CONVERSOR DE IMÁGENES A WEBP ===
+         * Sistema de conversión por pasos con mejor UX
+         */
+
+        // === CONFIGURACIÓN Y CONSTANTES ===
+        const CONFIG = {
+            MAX_FILES: 20,
+            MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+            MAX_TOTAL_SIZE: 50 * 1024 * 1024, // 50MB
+            API_ENDPOINT: 'https://valen-dev-helpers.onrender.com/convert-image',
+            ACCEPTED_TYPES: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+        };
+
+        const LOADING_TIPS = [
+            "🔄 Procesando imágenes...",
+            "🎨 Optimizando calidad...",
+            "📦 Preparando descarga...",
+            "✨ Aplicando compresión WebP...",
+            "🚀 Finalizando conversión..."
+        ];
+
+        // === ELEMENTOS DEL DOM ===
+        const elements = {
+            // Pasos
+            steps: document.querySelectorAll('.step'),
+            stepContents: document.querySelectorAll('.step-content'),
+            
+            // Paso 1
+            uploadZone: document.getElementById('uploadZone'),
+            fileInput: document.getElementById('fileInput'),
+            fileList: document.getElementById('fileList'),
+            fileAlert: document.getElementById('fileAlert'),
+            nextStep1: document.getElementById('nextStep1'),
+            
+            // Paso 2
+            apiKey: document.getElementById('apiKey'),
+            qualitySlider: document.getElementById('qualitySlider'),
+            qualityDisplay: document.getElementById('qualityDisplay'),
+            backStep1: document.getElementById('backStep1'),
+            nextStep2: document.getElementById('nextStep2'),
+            
+            // Paso 3
+            conversionSummary: document.getElementById('conversionSummary'),
+            summaryText: document.getElementById('summaryText'),
+            backStep2: document.getElementById('backStep2'),
+            convertButton: document.getElementById('convertButton'),
+            startOver: document.getElementById('startOver'),
+            
+            // Loading
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            loadingMessage: document.getElementById('loadingMessage'),
+            loadingTip: document.getElementById('loadingTip'),
+            progressFill: document.getElementById('progressFill')
+        };
+
+        // === ESTADO DE LA APLICACIÓN ===
+        let appState = {
+            currentStep: 1,
+            selectedFiles: [],
+            quality: 80,
+            isProcessing: false
+        };
+
+        // === INICIALIZACIÓN ===
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+        function initializeApp() {
+            setupEventListeners();
+            updateQualityDisplay();
+            
+            // Auto-completar API key para pruebas
+            if (elements.apiKey.value === 'changeme') {
+                elements.apiKey.style.background = '#e8f5e8';
+            }
+        }
+
+        // === EVENT LISTENERS ===
+        function setupEventListeners() {
+            // === PASO 1: CARGA DE ARCHIVOS ===
+            elements.uploadZone.addEventListener('click', () => elements.fileInput.click());
+            elements.fileInput.addEventListener('change', handleFileSelection);
+            
+            // Drag & Drop
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                elements.uploadZone.addEventListener(eventName, preventDefaults);
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                elements.uploadZone.addEventListener(eventName, () => {
+                    elements.uploadZone.classList.add('dragover');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                elements.uploadZone.addEventListener(eventName, () => {
+                    elements.uploadZone.classList.remove('dragover');
+                });
+            });
+            
+            elements.uploadZone.addEventListener('drop', handleDrop);
+            
+            // === PASO 2: CONFIGURACIÓN ===
+            elements.qualitySlider.addEventListener('input', updateQualityDisplay);
+            elements.apiKey.addEventListener('input', validateApiKey);
+            
+            // === NAVEGACIÓN ===
+            elements.nextStep1.addEventListener('click', () => goToStep(2));
+            elements.backStep1.addEventListener('click', () => goToStep(1));
+            elements.nextStep2.addEventListener('click', () => goToStep(3));
+            elements.backStep2.addEventListener('click', () => goToStep(2));
+            elements.startOver.addEventListener('click', resetApp);
+            
+            // === CONVERSIÓN ===
+            elements.convertButton.addEventListener('click', startConversion);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // === MANEJO DE ARCHIVOS ===
+        function handleFileSelection(e) {
+            const files = Array.from(e.target.files);
+            processFiles(files);
+        }
+
+        function handleDrop(e) {
+            const files = Array.from(e.dataTransfer.files);
+            processFiles(files);
+        }
+
+        function processFiles(files) {
+            // Filtrar solo imágenes válidas
+            const validFiles = files.filter(file => {
+                if (!CONFIG.ACCEPTED_TYPES.includes(file.type)) {
+                    showNotification(`${file.name} no es un tipo de imagen válido`, 'warning');
+                    return false;
+                }
+                
+                if (file.size > CONFIG.MAX_FILE_SIZE) {
+                    showNotification(`${file.name} excede el tamaño máximo de 10MB`, 'error');
+                    return false;
+                }
+                
+                return true;
+            });
+
+            // Limitar a máximo de archivos permitidos
+            if (validFiles.length > CONFIG.MAX_FILES) {
+                validFiles.splice(CONFIG.MAX_FILES);
+                elements.fileAlert.classList.remove('hidden');
+            } else {
+                elements.fileAlert.classList.add('hidden');
+            }
+
+            // Verificar tamaño total
+            const totalSize = validFiles.reduce((sum, file) => sum + file.size, 0);
+            if (totalSize > CONFIG.MAX_TOTAL_SIZE) {
+                showNotification(`El tamaño total (${formatFileSize(totalSize)}) excede el límite de 50MB`, 'error');
+                return;
+            }
+
+            appState.selectedFiles = validFiles;
+            updateFileList();
+            validateStep1();
+        }
+
+        function updateFileList() {
+            if (appState.selectedFiles.length === 0) {
+                elements.fileList.classList.add('hidden');
+                return;
+            }
+
+            elements.fileList.classList.remove('hidden');
+            elements.fileList.innerHTML = appState.selectedFiles.map((file, index) => `
+                <div class="file-item">
+                    <div class="file-info">
+                        <div class="file-icon">🖼️</div>
+                        <div class="file-details">
+                            <div class="file-name">${file.name}</div>
+                            <div class="file-size">${formatFileSize(file.size)}</div>
+                        </div>
+                    </div>
+                    <button class="remove-file" onclick="removeFile(${index})" title="Eliminar archivo">
+                        ❌
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeFile(index) {
+            appState.selectedFiles.splice(index, 1);
+            updateFileList();
+            validateStep1();
+            
+            if (appState.selectedFiles.length <= CONFIG.MAX_FILES) {
+                elements.fileAlert.classList.add('hidden');
+            }
+        }
+
+        function validateStep1() {
+            const hasFiles = appState.selectedFiles.length > 0;
+            elements.nextStep1.disabled = !hasFiles;
+            
+            if (hasFiles) {
+                elements.nextStep1.textContent = `Continuar con ${appState.selectedFiles.length} ${appState.selectedFiles.length === 1 ? 'imagen' : 'imágenes'}`;
+            } else {
+                elements.nextStep1.textContent = 'Continuar con la configuración';
+            }
+        }
+
+        // === CONFIGURACIÓN ===
+        function updateQualityDisplay() {
+            const quality = elements.qualitySlider.value;
+            appState.quality = parseInt(quality);
+            elements.qualityDisplay.textContent = `Calidad: ${quality}%`;
+            
+            // Cambiar color según calidad
+            if (quality < 70) {
+                elements.qualityDisplay.style.color = '#ff9800';
+            } else if (quality > 90) {
+                elements.qualityDisplay.style.color = '#f44336';
+            } else {
+                elements.qualityDisplay.style.color = '#4CAF50';
+            }
+        }
+
+        function validateApiKey() {
+            const isValid = elements.apiKey.value.trim().length > 0;
+            elements.nextStep2.disabled = !isValid;
+            
+            if (elements.apiKey.value === 'changeme') {
+                elements.apiKey.style.background = '#e8f5e8';
+            } else {
+                elements.apiKey.style.background = '';
+            }
+        }
+
+        // === NAVEGACIÓN DE PASOS ===
+        function goToStep(stepNumber) {
+            // Validaciones antes de cambiar de paso
+            if (stepNumber === 2 && appState.selectedFiles.length === 0) {
+                showNotification('Primero debes seleccionar al menos una imagen', 'warning');
+                return;
+            }
+
+            if (stepNumber === 3 && !elements.apiKey.value.trim()) {
+                showNotification('Debes ingresar una API Key', 'warning');
+                elements.apiKey.focus();
+                return;
+            }
+
+            // Actualizar estado visual de los pasos
+            elements.steps.forEach((step, index) => {
+                const stepNum = index + 1;
+                step.classList.remove('active', 'completed');
+                
+                if (stepNum === stepNumber) {
+                    step.classList.add('active');
+                } else if (stepNum < stepNumber) {
+                    step.classList.add('completed');
+                }
+            });
+
+            // Mostrar contenido del paso correspondiente
+            elements.stepContents.forEach((content, index) => {
+                content.classList.remove('active');
+                if (index + 1 === stepNumber) {
+                    content.classList.add('active');
+                }
+            });
+
+            appState.currentStep = stepNumber;
+
+            // Actualizar resumen en paso 3
+            if (stepNumber === 3) {
+                updateConversionSummary();
+            }
+        }
+
+        function updateConversionSummary() {
+            const fileCount = appState.selectedFiles.length;
+            const totalSize = appState.selectedFiles.reduce((sum, file) => sum + file.size, 0);
+            
+            elements.summaryText.innerHTML = `
+                <div style="margin-top: 0.5rem;">
+                    📁 <strong>${fileCount}</strong> ${fileCount === 1 ? 'imagen' : 'imágenes'} seleccionadas<br>
+                    📏 Tamaño total: <strong>${formatFileSize(totalSize)}</strong><br>
+                    ⚙️ Calidad: <strong>${appState.quality}%</strong><br>
+                    🔑 API Key: <strong>${elements.apiKey.value === 'changeme' ? 'Key de prueba' : 'Personalizada'}</strong>
+                </div>
+            `;
+        }
+
+        // === CONVERSIÓN ===
+        async function startConversion() {
+            if (appState.isProcessing) return;
+
+            appState.isProcessing = true;
+            showLoading();
+
+            try {
+                const formData = new FormData();
+                
+                // Agregar archivos
+                appState.selectedFiles.forEach(file => {
+                    formData.append('files', file);
+                });
+
+                // Agregar configuración
+                formData.append('apiKey', elements.apiKey.value);
+                formData.append('quality', appState.quality);
+
+                const response = await fetch(CONFIG.API_ENDPOINT, {
+                    method: 'POST',
+                    headers: {
+                        'x-api-key': elements.apiKey.value
+                    },
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || handleHttpError(response.status));
+                }
+
+                // Descargar archivo
+                const blob = await response.blob();
+                downloadFile(blob);
+                
+                showNotification('¡Conversión completada exitosamente!', 'success');
+                
+                // Opcional: resetear después de éxito
+                setTimeout(() => {
+                    if (confirm('¿Deseas convertir más imágenes?')) {
+                        resetApp();
+                    }
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error en conversión:', error);
+                handleConversionError(error);
+            } finally {
+                appState.isProcessing = false;
+                hideLoading();
+            }
+        }
+
+        function handleHttpError(status) {
+            const errors = {
+                400: 'Error en los archivos enviados. Verifica que sean imágenes válidas.',
+                401: 'API Key inválida. Verifica tu clave de acceso.',
+                413: 'Los archivos son demasiado grandes. Reduce el tamaño o cantidad.',
+                429: 'Demasiadas solicitudes. Espera un momento antes de intentar nuevamente.',
+                500: 'Error del servidor. Inténtalo más tarde.',
+                503: 'Servicio no disponible temporalmente.'
+            };
+            
+            return errors[status] || `Error del servidor (${status}). Inténtalo más tarde.`;
+        }
+
+        function handleConversionError(error) {
+            let message = 'Error durante la conversión';
+            let type = 'error';
+            
+            if (error.message.includes('Failed to fetch')) {
+                message = 'Error de conexión. Verifica tu internet y vuelve a intentar.';
+            } else if (error.message.includes('API Key')) {
+                message = 'API Key inválida. Verifica tu clave de acceso.';
+                elements.apiKey.classList.add('shake');
+                setTimeout(() => elements.apiKey.classList.remove('shake'), 500);
+            } else if (error.message.includes('demasiado grandes')) {
+                message = 'Archivos demasiado grandes. Reduce el tamaño o cantidad de imágenes.';
+            } else if (error.message.includes('429')) {
+                message = 'Demasiadas solicitudes. Espera 1 minuto antes de intentar nuevamente.';
+                type = 'warning';
+            } else {
+                message = error.message || 'Error desconocido durante la conversión';
+            }
+            
+            showNotification(message, type);
+        }
+
+        function downloadFile(blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // Determinar nombre del archivo
+            if (appState.selectedFiles.length === 1) {
+                const originalName = appState.selectedFiles[0].name;
+                const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf('.'));
+                link.download = `${nameWithoutExt}.webp`;
+            } else {
+                const today = new Date().toISOString().split('T')[0];
+                link.download = `imagenes_convertidas_${today}.zip`;
+            }
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // === LOADING Y PROGRESO ===
+        function showLoading() {
+            elements.loadingOverlay.style.display = 'flex';
+            elements.convertButton.disabled = true;
+            
+            // Simular progreso
+            let progress = 0;
+            let tipIndex = 0;
+            
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                elements.progressFill.style.width = `${progress}%`;
+            }, 500);
+            
+            const tipInterval = setInterval(() => {
+                elements.loadingMessage.textContent = LOADING_TIPS[tipIndex];
+                tipIndex = (tipIndex + 1) % LOADING_TIPS.length;
+            }, 2000);
+            
+            // Guardar intervalos para limpiarlos después
+            elements.loadingOverlay.progressInterval = progressInterval;
+            elements.loadingOverlay.tipInterval = tipInterval;
+        }
+
+        function hideLoading() {
+            elements.loadingOverlay.style.display = 'none';
+            elements.convertButton.disabled = false;
+            elements.progressFill.style.width = '0%';
+            
+            // Limpiar intervalos
+            if (elements.loadingOverlay.progressInterval) {
+                clearInterval(elements.loadingOverlay.progressInterval);
+            }
+            if (elements.loadingOverlay.tipInterval) {
+                clearInterval(elements.loadingOverlay.tipInterval);
+            }
+        }
+
+        // === NOTIFICACIONES ===
+        function showNotification(message, type = 'info') {
+            // Remover notificaciones existentes
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notif => notif.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification alert alert-${type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'error'}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                max-width: 400px;
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            
+            const icons = {
+                success: '✅',
+                warning: '⚠️',
+                error: '❌',
+                info: 'ℹ️'
+            };
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span>${icons[type] || icons.info}</span>
+                    <span style="flex: 1;">${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" 
+                            style="background: none; border: none; font-size: 1.2rem; cursor: pointer; color: inherit;">
+                        ×
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.style.animation = 'slideOut 0.3s ease';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // === UTILIDADES ===
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function resetApp() {
+            appState = {
+                currentStep: 1,
+                selectedFiles: [],
+                quality: 80,
+                isProcessing: false
+            };
+            
+            // Resetear inputs
+            elements.fileInput.value = '';
+            elements.qualitySlider.value = 80;
+            elements.apiKey.value = 'changeme';
+            elements.apiKey.style.background = '#e8f5e8';
+            
+            // Limpiar listas
+            elements.fileList.classList.add('hidden');
+            elements.fileAlert.classList.add('hidden');
+            
+            // Resetear validaciones
+            elements.nextStep1.disabled = true;
+            elements.nextStep1.textContent = 'Continuar con la configuración';
+            
+            // Ir al paso 1
+            goToStep(1);
+            
+            updateQualityDisplay();
+        }
+
+        // === ANIMACIONES CSS ADICIONALES ===
+        const additionalStyles = document.createElement('style');
+        additionalStyles.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(additionalStyles);
+
+        // === FUNCIÓN GLOBAL PARA REMOVER ARCHIVOS ===
+        window.removeFile = removeFile;
+    </script>
+</body>
 </html>
